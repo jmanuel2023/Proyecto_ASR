@@ -8,18 +8,21 @@ def get_users(host):
     for dev in devices:
         if dev['ip'] == host:
             router = devices[dev]
-            with ConnectHandler(**router) as connection:
-                output = connection.send_command('show running-config | include username')
-            output_lines = output.splitlines()
-            user_dict = {}
-            for line in output_lines:
-                if line.startswith("username "):
-                    parts = line.split()
-                    username = parts[1]
-                    privilege = parts[3]  # El privilegio se encuentra en la posición 3
-                    password = parts[-1]
-                    user_dict[username] = {'privilege': privilege, 'password': password}
-            users[dev] = user_dict
+            try:
+                with ConnectHandler(**router) as connection:
+                    output = connection.send_command('show running-config | include username')
+                output_lines = output.splitlines()
+                user_dict = {}
+                for line in output_lines:
+                    if line.startswith("username "):
+                        parts = line.split()
+                        username = parts[1]
+                        privilege = parts[3]  # El privilegio se encuentra en la posición 3
+                        password = parts[-1]
+                        user_dict[username] = {'privilege': privilege, 'password': password}
+                users[dev] = user_dict
+            except:
+                return {'statatus': 'error'}
             break
     return users
 
@@ -30,10 +33,13 @@ def delete_user(host, user):
     for dev in devices:
         if dev['ip'] == host:
             router = devices[dev]
-            with ConnectHandler(**router) as connection:
-                connection.send_config_set('no username ' + user)
-                connection.save_config()
-            break
+            try:
+                with ConnectHandler(**router) as connection:
+                    connection.send_config_set('no username ' + user)
+                    connection.save_config()
+                break
+            except:
+                return {'statatus': 'error'}
     return get_users(host)
 
 def create_user(host, user, privileges, password):
@@ -45,11 +51,14 @@ def create_user(host, user, privileges, password):
     for dev in devices:
         if dev['ip'] == host:
             router = devices[dev]
-            with ConnectHandler(**router) as connection:
-                connection.send_config_set('username ' + user + ' privilege ' 
-                                        + privileges + ' password ' + password)
-                connection.save_config()
-            break
+            try:
+                with ConnectHandler(**router) as connection:
+                    connection.send_config_set('username ' + user + ' privilege ' 
+                                            + privileges + ' password ' + password)
+                    connection.save_config()
+                break
+            except:
+                return {'statatus': 'error'}
     return get_users(host)
 
 def update_user(host, user, privileges=None, password=None):
@@ -69,8 +78,11 @@ def update_user(host, user, privileges=None, password=None):
     for dev in devices:
         if dev['ip'] == host:
             router = devices[dev]
-            with ConnectHandler(**router) as connection:
-                connection.send_config_set(comand)
-                connection.save_config()
-            break
+            try:
+                with ConnectHandler(**router) as connection:
+                    connection.send_config_set(comand)
+                    connection.save_config()
+                break
+            except:
+                return {'statatus': 'error'}
     return get_users(host)

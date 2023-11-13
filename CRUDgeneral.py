@@ -8,18 +8,21 @@ def get_users_all_routers():
     users = {}
     for dev in devices:
         router = devices[dev]
-        with ConnectHandler(**router) as connection:
-            output = connection.send_command('show running-config | include username')
-        output_lines = output.splitlines()
-        user_dict = {}
-        for line in output_lines:
-            if line.startswith("username "):
-                parts = line.split()
-                username = parts[1]
-                privilege = parts[3]  # El privilegio se encuentra en la posición 3
-                password = parts[-1]
-                user_dict[username] = {'privilege': privilege, 'password': password}
-        users[dev] = user_dict
+        try:
+            with ConnectHandler(**router) as connection:
+                output = connection.send_command('show running-config | include username')
+            output_lines = output.splitlines()
+            user_dict = {}
+            for line in output_lines:
+                if line.startswith("username "):
+                    parts = line.split()
+                    username = parts[1]
+                    privilege = parts[3]  # El privilegio se encuentra en la posición 3
+                    password = parts[-1]
+                    user_dict[username] = {'privilege': privilege, 'password': password}
+            users[dev] = user_dict
+        except:
+            return {'statatus': 'error'}
     return users
 
 def delete_user_all_routers(user):
@@ -28,9 +31,12 @@ def delete_user_all_routers(user):
     user = str(user)
     for dev in devices:
         router = devices[dev]
-        with ConnectHandler(**router) as connection:
-            connection.send_config_set('no username ' + user)
-            connection.save_config()
+        try:
+            with ConnectHandler(**router) as connection:
+                connection.send_config_set('no username ' + user)
+                connection.save_config()
+        except:
+            return {'statatus': 'error'}
     return get_users_all_routers()
 
 def create_user_all_routers(user, privileges, password):
@@ -41,10 +47,13 @@ def create_user_all_routers(user, privileges, password):
     password = str(password)
     for dev in devices:
         router = devices[dev]
-        with ConnectHandler(**router) as connection:
-            connection.send_config_set('username ' + user + ' privilege ' 
-                                    + privileges + ' password ' + password)
-            connection.save_config()
+        try:
+            with ConnectHandler(**router) as connection:
+                connection.send_config_set('username ' + user + ' privilege ' 
+                                        + privileges + ' password ' + password)
+                connection.save_config()
+        except:
+            return {'statatus': 'error'}
     return get_users_all_routers()
 
 def update_user_all_routers(user, privileges=None, password=None):
@@ -63,7 +72,10 @@ def update_user_all_routers(user, privileges=None, password=None):
         comand = 'username ' + user + ' privilege ' + privileges + ' password ' + password
     for dev in devices:
         router = devices[dev]
-        with ConnectHandler(**router) as connection:
-            connection.send_config_set(comand)
-            connection.save_config()
+        try:
+            with ConnectHandler(**router) as connection:
+                connection.send_config_set(comand)
+                connection.save_config()
+        except:
+            return {'statatus': 'error'}
     return get_users_all_routers()
