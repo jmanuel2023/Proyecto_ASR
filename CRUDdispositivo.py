@@ -22,7 +22,7 @@ def get_users(host):
                         user_dict[username] = {'privilege': privilege, 'password': password}
                 users[dev] = user_dict
             except:
-                return {'statatus': 'error'}
+                return {'statatus': 'No hay coneccion al router'}
             break
     return users
 
@@ -39,7 +39,7 @@ def delete_user(host, user):
                     connection.save_config()
                 break
             except:
-                return {'statatus': 'error'}
+                return {'statatus': 'No hay coneccion al router'}
     return get_users(host)
 
 def create_user(host, user, privileges, password):
@@ -58,7 +58,7 @@ def create_user(host, user, privileges, password):
                     connection.save_config()
                 break
             except:
-                return {'statatus': 'error'}
+                return {'statatus': 'No hay coneccion al router'}
     return get_users(host)
 
 def update_user(host, user, privileges=None, password=None):
@@ -84,5 +84,5 @@ def update_user(host, user, privileges=None, password=None):
                     connection.save_config()
                 break
             except:
-                return {'statatus': 'error'}
+                return {'statatus': 'No hay coneccion al router'}
     return get_users(host)

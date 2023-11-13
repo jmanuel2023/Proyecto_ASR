@@ -22,7 +22,7 @@ def get_users_all_routers():
                     user_dict[username] = {'privilege': privilege, 'password': password}
             users[dev] = user_dict
         except:
-            return {'statatus': 'error'}
+            users[dev] = user_dict
     return users
 
 def delete_user_all_routers(user):
@@ -36,7 +36,7 @@ def delete_user_all_routers(user):
                 connection.send_config_set('no username ' + user)
                 connection.save_config()
         except:
-            return {'statatus': 'error'}
+            print('No se pudo conectar al router ' + dev)
     return get_users_all_routers()
 
 def create_user_all_routers(user, privileges, password):
@@ -53,7 +53,7 @@ def create_user_all_routers(user, privileges, password):
                                         + privileges + ' password ' + password)
                 connection.save_config()
         except:
-            return {'statatus': 'error'}
+            print('No se pudo conectar al router ' + dev)
     return get_users_all_routers()
 
 def update_user_all_routers(user, privileges=None, password=None):
@@ -77,5 +77,5 @@ def update_user_all_routers(user, privileges=None, password=None):
                 connection.send_config_set(comand)
                 connection.save_config()
         except:
-            return {'statatus': 'error'}
+            print('No se pudo conectar al router ' + dev)
     return get_users_all_routers()
