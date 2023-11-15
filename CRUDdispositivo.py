@@ -6,7 +6,7 @@ def get_users(host):
         devices = json.load(file)
     users = {}
     for dev in devices:
-        if dev['ip'] == host:
+        if devices[dev]['ip'] == host:
             router = devices[dev]
             try:
                 with ConnectHandler(**router) as connection:
@@ -17,7 +17,7 @@ def get_users(host):
                     if line.startswith("username "):
                         parts = line.split()
                         username = parts[1]
-                        privilege = parts[3]  # El privilegio se encuentra en la posición 3
+                        privilege = parts[3]
                         password = parts[-1]
                         user_dict[username] = {'privilege': privilege, 'password': password}
                 users[dev] = user_dict
@@ -31,7 +31,7 @@ def delete_user(host, user):
         devices = json.load(file)
     user = str(user)
     for dev in devices:
-        if dev['ip'] == host:
+        if devices[dev]['ip'] == host:
             router = devices[dev]
             try:
                 with ConnectHandler(**router) as connection:
@@ -49,7 +49,7 @@ def create_user(host, user, privileges, password):
     privileges = str(privileges)
     password = str(password)
     for dev in devices:
-        if dev['ip'] == host:
+        if devices[dev]['ip'] == host:
             router = devices[dev]
             try:
                 with ConnectHandler(**router) as connection:
@@ -76,7 +76,7 @@ def update_user(host, user, privileges=None, password=None):
         password = str(password)
         comand = 'username ' + user + ' privilege ' + privileges + ' password ' + password
     for dev in devices:
-        if dev['ip'] == host:
+        if devices[dev]['ip'] == host:
             router = devices[dev]
             try:
                 with ConnectHandler(**router) as connection:

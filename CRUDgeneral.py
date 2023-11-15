@@ -17,12 +17,12 @@ def get_users_all_routers():
                 if line.startswith("username "):
                     parts = line.split()
                     username = parts[1]
-                    privilege = parts[3]  # El privilegio se encuentra en la posición 3
+                    privilege = parts[3]
                     password = parts[-1]
                     user_dict[username] = {'privilege': privilege, 'password': password}
             users[dev] = user_dict
         except:
-            users[dev] = user_dict
+            users[dev] = {'status': 'No se puede conectar con el router ' + dev}
     return users
 
 def delete_user_all_routers(user):
