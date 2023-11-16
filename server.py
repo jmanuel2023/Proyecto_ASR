@@ -48,7 +48,7 @@ def obtener_info_router(host,community):
 		except Exception as e:
 			return jsonify({'error': str(e)})
 
-	def snmp_query(host, community, oid):
+	def snmp_query_1(host, community, oid):
 		errorIndication, errorStatus, errorIndex, varBinds = cmdGen.getCmd(cmdgen.CommunityData(community),cmdgen.UdpTransportTarget((host, 161)),oid)
 		if errorIndication:
 			print(errorIndication)
@@ -131,7 +131,7 @@ def obtener_info_router(host,community):
 
 	
 	result = {}
-	result["hostname"] = snmp_query(host, community, system_name)
+	result["hostname"] = snmp_query_1(host, community, system_name)
 	result["LoopBack_IP"] = obtiene_iploopback()
 	result["IP_administrativa"] = obtiene_ipadmin()
 	result["Empresa"] = obtiene_empresa(host, community, empresa_system)
@@ -233,7 +233,186 @@ def get_routes_hostname(hostname):
 #Routes Hostname Interface Endpoint TODO: Iplement get funtion
 @app.route("/routes/<hostname>/interfaces/<interfaz>")
 def get_routes_hostname_interface(hostname,interfaz):
-    return jsonify({"hostname": hostname, "interfaz": interfaz})
+    cmdGen = cmdgen.CommandGenerator()
+    n_int = name_interface
+    n_int = n_int.replace('_','/')
+    with open('routers.json','r') as f: #Aqui se abrirá el routers.json pero se necesita cambiar al directorio que tendŕa cada quien
+        data = json.load(f)
+    if hostname in data:
+        host = data[hostname]['ip'] #Se debe cambiar a la estructura del json, para encontrar la ip del router
+    else:
+        resp_json = jsonify({"Error":"El router no se encuentra definido"})
+        resp_json.status_code = 404
+        return resp_json
+    community = 'publica'
+    my_device = {
+        'host': host,
+        'username':"admin",
+        'password':"admin",
+        'secret' : "admin",
+        'device_type':"cisco_ios"
+    }
+
+    net_connect = Netmiko(**my_device)
+    output = net_connect.send_command("show ip interface brief",use_textfsm=True)
+    i=0
+    indice = 0
+    for salida in output:
+        print(salida['interface'])
+        if(salida['interface']==n_int):
+            indice = i
+        else:
+            i = i + 1
+
+
+    if output[indice].get('ip_address') != 'unassigned':
+        ip_int = output[indice]['ip_address']
+    else:
+        resp_json = jsonify({"Error":"La interfaz no tiene ip definida"})
+        resp_json.status_code = 404
+        return resp_json
+
+    def snmp_query_oid_no(host, community, oid):
+        errorIndication, errorStatus, errorIndex, varBinds =cmdGen.nextCmd(
+            cmdgen.CommunityData(community),
+            cmdgen.UdpTransportTarget((host, 161)),
+            oid
+        )
+
+        if errorIndication:
+            print(errorIndication)
+        else:
+            if errorStatus:
+                print('%s at %s' % (
+                    errorStatus.prettyPrint(),
+                    errorIndex and varBinds[int(errorIndex)-1] or '?'
+                    )
+                )
+            else:
+                conter = 1
+                indice = 0
+                for val in varBinds:
+                    val_string = str(val[0])
+                    bandera_1=val_string.count(n_int)
+                    if bandera_1 == 1:
+                        indice = conter
+                    else:
+                        conter = conter + 1
+                return indice
+    oi = '.1.3.6.1.2.1.2.2.1.2'
+    index = snmp_query_oid_no(host,community,oi)
+    if index == 0:
+        resp_json = jsonify({"Error":"La interfaz no se encuentra definida"})
+        resp_json.status_code = 404
+        return resp_json
+    tipo_int = '.1.3.6.1.2.1.2.2.1.3.'+str(index)
+    no_int = '.1.3.6.1.2.1.2.2.1.1.'+str(index)
+    netmask_int = '.1.3.6.1.2.1.4.20.1.3.'
+    state_int = '.1.3.6.1.2.1.2.2.1.8.'+str(index)
+    def snmp_query(host, community, oid):
+        errorIndication, errorStatus, errorIndex, varBinds =cmdGen.getCmd(
+            cmdgen.CommunityData(community),
+            cmdgen.UdpTransportTarget((host, 161)),
+            oid
+        )
+
+        if errorIndication:
+            print(errorIndication)
+        else:
+            if errorStatus:
+                print('%s at %s' % (
+                    errorStatus.prettyPrint(),
+                    errorIndex and varBinds[int(errorIndex)-1] or '?'
+                    )
+                )
+            else:
+                for name, val in varBinds:
+                    return(val.prettyPrint())
+
+    json_interface = {}
+    json_interface['Tipo']= snmp_query(host,community,tipo_int)
+    if(json_interface['Tipo']=='1'):
+        json_interface['Tipo']= 'other(1)'
+    elif(json_interface['Tipo']=='2'):
+        json_interface['Tipo']='regular1822(2)'
+    elif(json_interface['Tipo']=='3'):
+        json_interface['Tipo']='hdh1822(3)'
+    elif(json_interface['Tipo']=='4'):
+        json_interface['Tipo']='ddn-x25(4)'
+    elif(json_interface['Tipo']=='5'):
+        json_interface['Tipo']='rfc877-x25(5)'
+    elif(json_interface['Tipo']=='6'):
+        json_interface['Tipo']='ethernet-csmacd(6)'
+    elif(json_interface['Tipo']=='7'):
+        json_interface['Tipo']='iso88023-csmacd(7)'
+    elif(json_interface['Tipo']=='8'):
+        json_interface['Tipo']='iso88024-tokenBus(8)'
+    elif(json_interface['Tipo']=='9'):
+        json_interface['Tipo']='iso88025-tokenRIng(9)'
+    elif(json_interface['Tipo']=='10'):
+        json_interface['Tipo']='iso88026-man(10)'
+    elif(json_interface['Tipo']=='11'):
+        json_interface['Tipo']='starLan(11)'
+    elif(json_interface['Tipo']=='12'):
+        json_interface['Tipo']='proteon-10Mbit(12)'
+    elif(json_interface['Tipo']=='13'):
+        json_interface['Tipo']='proteon-80Mbit'
+    elif(json_interface['Tipo']=='14'):
+        json_interface['Tipo']='hyperchannel(14)'
+    elif(json_interface['Tipo']=='15'):
+        json_interface['Tipo']='fddi(15)'
+    elif(json_interface['Tipo']=='16'):
+        json_interface['Tipo']='lapb(16)'
+    elif(json_interface['Tipo']=='17'):
+        json_interface['Tipo']='sdlc(17)'
+    elif(json_interface['Tipo']=='18'):
+        json_interface['Tipo']='ds1(18)'
+    elif(json_interface['Tipo']=='19'):
+        json_interface['Tipo']='e1(19)'
+    elif(json_interface['Tipo']=='20'):
+        json_interface['Tipo']='basicISDN(20)'
+    elif(json_interface['Tipo']=='21'):
+        json_interface['Tipo']='primaryISDN(21)'
+    elif(json_interface['Tipo']=='22'):
+        json_interface['Tipo']='propPointToSerial(22)'
+    elif(json_interface['Tipo']=='23'):
+        json_interface['Tipo']='ppp(23)'
+    elif(json_interface['Tipo']=='24'):
+        json_interface['Tipo']='softwareLoopback(24)'
+    elif(json_interface['Tipo']=='25'):
+        json_interface['Tipo']='eon(25)'
+    elif(json_interface['Tipo']=='26'):
+        json_interface['Tipo']='ethernet-32Mbit(26)'
+    elif(json_interface['Tipo']=='27'):
+        json_interface['Tipo']='nsip(27)'
+    elif(json_interface['Tipo']=='28'):
+        json_interface['Tipo']='slip(28)'
+    elif(json_interface['Tipo']=='29'):
+        json_interface['Tipo']='ultra(29)'
+    elif(json_interface['Tipo']=='30'):
+        json_interface['Tipo']='ds3(30)'
+    elif(json_interface['Tipo']=='31'):
+        json_interface['Tipo']='sip(31)'
+    else:
+        json_interface['Tipo']='frame-relay(32)'
+
+    json_interface['Numero de Interfaz']= snmp_query(host,community,no_int)
+    json_interface['Direccion IP']=ip_int
+    netmask_int=netmask_int+ip_int
+    json_interface['Submascara']= snmp_query(host,community,netmask_int)
+    json_interface['Estado']= snmp_query(host,community,state_int)
+    if(json_interface['Estado']=='1'):
+        json_interface['Estado']='UP(1)'
+    elif(json_interface['Estado']=='2'):
+        json_interface['Estado']='DOWN(2)'
+    else:
+        json_interface['Estado']='Testing(3)'
+    liga = f"{request.url_root}routes/{hostname}"
+    json_interface['Liga al router']=liga
+
+    with open('interfaz.json', 'w') as f: #cambiar para la dirección de cada computadora
+        json.dump(json_interface,f)
+    return jsonify(json_interface)
 
 #Crud users per router TODO: implement funtions
 @app.route("/routes/<hostname>/usuarios")
