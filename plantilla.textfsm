@@ -1,0 +1,9 @@
+Value INTF (\S+)
+Value IP (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})
+Value METHOD (\w+)
+Value STATUS (\w+)
+Value PROTOCOL (\w+)
+
+
+Start
+	^${INTF}\s+${IP}\s+YES\s+${METHOD}\s+${STATUS}\s+${PROTOCOL} -> Record

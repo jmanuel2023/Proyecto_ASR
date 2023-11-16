@@ -1,7 +1,12 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, url_for
+from pysnmp.entity.rfc3413.oneliner import cmddgen
+from netmiko import ConnectHandler
+from netmiko import Netmiko
+import textfsm
 import json
 import CRUDgeneral as crud
 import CRUDdispositivo as crud_router
+
 
 def obtener_info_router(host,community):
 	cmdGen = cmdgen.CommandGenerator()
@@ -13,9 +18,10 @@ def obtener_info_router(host,community):
 		'password':'admin',
 	}
 		
-	rol1 = "ROL DE ACCESO"
-	rol2 = "ROL DE AGREGACION/DISTRIBUCION"
-	rol3 = "NUCLEO"
+	rol1 = "Proveedor de servicios"
+	rol2 = "Router de frontera"
+	rol3 = "Nucleo"
+    rol4 = "Hojas"
 
 # Hostname OID
 	system_name = '1.3.6.1.2.1.1.5.0'
@@ -28,7 +34,7 @@ def obtener_info_router(host,community):
 			output = connection.send_command('show ip interface brief')
 		
 		
-			with open('plantilla.textfsm', 'r') as archivofsm:
+			with open('/home/hanz/Proyecto_ASR/plantilla.textfsm', 'r') as archivofsm:
 				template = textfsm.TextFSM(archivofsm)
 		
 			parsed_data = template.ParseText(output)
@@ -69,11 +75,13 @@ def obtener_info_router(host,community):
 			else:
 				for name, val in varBinds:
 					if str(val) == "TOR-1" or str(val) == "TOR-2":
-						return(rol1)
+						return(rol4)
 					elif str(val) == "R1" or str(val) == "R2":
+						return(rol3)
+					elif str(val) == "Edge":
 						return(rol2)
-					else:
-						return(rol3) 
+                    else:
+                        return(rol1) 
 						
 	def obtiene_iploopback():
 		return("N/A")
@@ -84,7 +92,7 @@ def obtener_info_router(host,community):
 			output = connection.send_command('show ip interface brief')
 		
 		
-			with open('plantilla.textfsm', 'r') as archivofsm:
+			with open('/home/hanz/Proyecto_ASR/plantilla.textfsm', 'r') as archivofsm:
 				template = textfsm.TextFSM(archivofsm)
 		
 			parsed_data = template.ParseText(output)
@@ -189,7 +197,7 @@ def delete_usuarios():
 #Routes Endpoint TODO: Iplement get funtion
 @app.route("/routes")
 def get_routes():
-    with open('routers.json','r') as file:
+    with open('/home/hanz/Proyecto_ASR/routers.json','r') as file:
 		datos = json.load(file)
 	hosts=[device['ip'] for device in datos.values()]
 	community = 'publica'
@@ -200,11 +208,11 @@ def get_routes():
 		result = obtener_info_router(host, community)
 		all_results.append(result)
 	
-	with open('/home/hanz/Documentos/ProyectoP1/resultados.json', 'w') as f:
+	with open('/home/hanz/Proyecto_ASR/resultados.json', 'w') as f:
 		json.dump(all_results,f, indent=2)
 	
 	try:
-		with open('resultados.json', 'r') as json_file:
+		with open('/home/hanz/Proyecto_ASR/resultados.json', 'r') as json_file:
 			routers = json.load(json_file)
 		
 		actualizar_enlaces(routers)
@@ -219,7 +227,7 @@ def get_routes():
 @app.route("/routes/<hostname>")
 def get_routes_hostname(hostname):
     try:
-		with open('resultados.json', 'r') as archivo:
+		with open('/home/hanz/Proyecto_ASR/resultados.json', 'r') as archivo:
 			datos = json.load(archivo)	
 		for router in datos:
 			if router['hostname'] == hostname:
@@ -236,7 +244,7 @@ def get_routes_hostname_interface(hostname,interfaz):
     cmdGen = cmdgen.CommandGenerator()
     n_int = name_interface
     n_int = n_int.replace('_','/')
-    with open('routers.json','r') as f: #Aqui se abrirá el routers.json pero se necesita cambiar al directorio que tendŕa cada quien
+    with open('/home/hanz/Proyecto_ASR/routers.json','r') as f: #Aqui se abrirá el routers.json pero se necesita cambiar al directorio que tendŕa cada quien
         data = json.load(f)
     if hostname in data:
         host = data[hostname]['ip'] #Se debe cambiar a la estructura del json, para encontrar la ip del router
@@ -410,7 +418,7 @@ def get_routes_hostname_interface(hostname,interfaz):
     liga = f"{request.url_root}routes/{hostname}"
     json_interface['Liga al router']=liga
 
-    with open('interfaz.json', 'w') as f: #cambiar para la dirección de cada computadora
+    with open('/home/hanz/Proyecto_ASR/interfaz.json', 'w') as f: #cambiar para la dirección de cada computadora
         json.dump(json_interface,f)
     return jsonify(json_interface)
 
