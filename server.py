@@ -388,7 +388,7 @@ def interface(hostname):
             json_interface[n_int]['Estado']='DOWN(2)'
         else:
             json_interface[n_int]['Estado']='Testing(3)'
-        liga = f"{request.url_root}routers/{hostname}"
+        liga = f"{request.url_root}routes/{hostname}"
         json_interface[n_int]['Liga al router']=liga
         if output[i-1].get('ip_address') != 'unassigned':
             ip_int = output[i-1]['ip_address']
@@ -407,7 +407,7 @@ def interface(hostname):
 @app.route("/routes/<hostname>/interfaces/<interfaz>")
 def get_routes_hostname_interface(hostname,interfaz):
     cmdGen = cmdgen.CommandGenerator()
-    n_int = name_interface
+    n_int = interfaz
     n_int = n_int.replace('_','/')
     with open('/home/hanz/Proyecto_ASR/routers.json','r') as f: #Aqui se abrirá el routers.json pero se necesita cambiar al directorio que tendŕa cada quien
         data = json.load(f)
