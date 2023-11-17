@@ -239,6 +239,171 @@ def get_routes_hostname(hostname):
 		return jsonify({'error': 'El archivo JSON no se encuentra'}),404
 
 #Routes Hostname Interface Endpoint TODO: Iplement get funtion
+@app.route("/routes/<hostname>/interfaces/")
+def interface(hostname):
+    cmdGen = cmdgen.CommandGenerator()
+    with open('/home/panda/routers.json','r') as f: #Aqui se abrirá el routers.json pero se necesita cambiar al directorio que tendŕa cada quien
+        data = json.load(f)
+    if hostname in data:
+        host = data[hostname]['ip'] #Se debe cambiar a la estructura del json, para encontrar la ip del router
+    else:
+        resp_json = jsonify({"Error":"El router no se encuentra definido"})
+        resp_json.status_code = 404
+        return resp_json
+    community = 'publica'
+    my_device = {
+        'host': host,
+        'username':"admin",
+        'password':"admin",
+        'secret' : "admin",
+        'device_type':"cisco_ios"
+    }
+    net_connect = Netmiko(**my_device)
+    output = net_connect.send_command("show ip interface brief",use_textfsm=True)
+    def snmp_query_oid_no(host, community, oid):
+        errorIndication, errorStatus, errorIndex, varBinds =cmdGen.nextCmd(
+            cmdgen.CommunityData(community),
+            cmdgen.UdpTransportTarget((host, 161)),
+            oid
+        )
+
+        if errorIndication:
+            print(errorIndication)
+        else:
+            if errorStatus:
+                print('%s at %s' % (
+                    errorStatus.prettyPrint(),
+                    errorIndex and varBinds[int(errorIndex)-1] or '?'
+                    )
+                )
+            else:
+                conter = 0
+                for val in varBinds:
+                    val_string = str(val[0])
+                    conter = conter + 1
+                return conter
+    oi = '.1.3.6.1.2.1.2.2.1.2'
+    index = snmp_query_oid_no(host,community,oi)
+    def snmp_query(host, community, oid):
+        errorIndication, errorStatus, errorIndex, varBinds =cmdGen.getCmd(
+            cmdgen.CommunityData(community),
+            cmdgen.UdpTransportTarget((host, 161)),
+            oid
+        )
+
+        if errorIndication:
+            print(errorIndication)
+        else:
+            if errorStatus:
+                print('%s at %s' % (
+                    errorStatus.prettyPrint(),
+                    errorIndex and varBinds[int(errorIndex)-1] or '?'
+                    )
+                )
+            else:
+                for name, val in varBinds:
+                    return(val.prettyPrint())
+    i=1
+    json_interface = {}
+    for _ in range(index-1):
+        name_interface = oi+'.'+str(i)
+        n_int = str(snmp_query(host,community,name_interface))
+        json_interface[n_int]={}
+
+        tipo_int = '.1.3.6.1.2.1.2.2.1.3.'+str(i)
+        no_int = '.1.3.6.1.2.1.2.2.1.1.'+str(i)
+        state_int = '.1.3.6.1.2.1.2.2.1.8.'+str(i)
+
+        json_interface[n_int]['Tipo']= snmp_query(host,community,tipo_int)
+        if(json_interface[n_int]['Tipo']=='1'):
+            json_interface[n_int]['Tipo']= 'other(1)'
+        elif(json_interface[n_int]['Tipo']=='2'):
+            json_interface[n_int]['Tipo']='regular1822(2)'
+        elif(json_interface[n_int]['Tipo']=='3'):
+            json_interface[n_int]['Tipo']='hdh1822(3)'
+        elif(json_interface[n_int]['Tipo']=='4'):
+            json_interface[n_int]['Tipo']='ddn-x25(4)'
+        elif(json_interface[n_int]['Tipo']=='5'):
+            json_interface[n_int]['Tipo']='rfc877-x25(5)'
+        elif(json_interface[n_int]['Tipo']=='6'):
+            json_interface[n_int]['Tipo']='ethernet-csmacd(6)'
+        elif(json_interface[n_int]['Tipo']=='7'):
+            json_interface[n_int]['Tipo']='iso88023-csmacd(7)'
+        elif(json_interface[n_int]['Tipo']=='8'):
+            json_interface[n_int]['Tipo']='iso88024-tokenBus(8)'
+        elif(json_interface[n_int]['Tipo']=='9'):
+            json_interface[n_int]['Tipo']='iso88025-tokenRIng(9)'
+        elif(json_interface[n_int]['Tipo']=='10'):
+            json_interface[n_int]['Tipo']='iso88026-man(10)'
+        elif(json_interface[n_int]['Tipo']=='11'):
+            json_interface[n_int]['Tipo']='starLan(11)'
+        elif(json_interface[n_int]['Tipo']=='12'):
+            json_interface[n_int]['Tipo']='proteon-10Mbit(12)'
+        elif(json_interface[n_int]['Tipo']=='13'):
+            json_interface[n_int]['Tipo']='proteon-80Mbit'
+        elif(json_interface[n_int]['Tipo']=='14'):
+            json_interface[n_int]['Tipo']='hyperchannel(14)'
+        elif(json_interface[n_int]['Tipo']=='15'):
+            json_interface[n_int]['Tipo']='fddi(15)'
+        elif(json_interface[n_int]['Tipo']=='16'):
+            json_interface[n_int]['Tipo']='lapb(16)'
+        elif(json_interface[n_int]['Tipo']=='17'):
+            json_interface[n_int]['Tipo']='sdlc(17)'
+        elif(json_interface[n_int]['Tipo']=='18'):
+            json_interface[n_int]['Tipo']='ds1(18)'
+        elif(json_interface[n_int]['Tipo']=='19'):
+            json_interface[n_int]['Tipo']='e1(19)'
+        elif(json_interface[n_int]['Tipo']=='20'):
+            json_interface[n_int]['Tipo']='basicISDN(20)'
+        elif(json_interface[n_int]['Tipo']=='21'):
+            json_interface[n_int]['Tipo']='primaryISDN(21)'
+        elif(json_interface[n_int]['Tipo']=='22'):
+            json_interface[n_int]['Tipo']='propPointToSerial(22)'
+        elif(json_interface[n_int]['Tipo']=='23'):
+            json_interface[n_int]['Tipo']='ppp(23)'
+        elif(json_interface[n_int]['Tipo']=='24'):
+            json_interface[n_int]['Tipo']='softwareLoopback(24)'
+        elif(json_interface[n_int]['Tipo']=='25'):
+            json_interface[n_int]['Tipo']='eon(25)'
+        elif(json_interface[n_int]['Tipo']=='26'):
+            json_interface[n_int]['Tipo']='ethernet-32Mbit(26)'
+        elif(json_interface[n_int]['Tipo']=='27'):
+            json_interface[n_int]['Tipo']='nsip(27)'
+        elif(json_interface[n_int]['Tipo']=='28'):
+            json_interface[n_int]['Tipo']='slip(28)'
+        elif(json_interface[n_int]['Tipo']=='29'):
+            json_interface[n_int]['Tipo']='ultra(29)'
+        elif(json_interface[n_int]['Tipo']=='30'):
+            json_interface[n_int]['Tipo']='ds3(30)'
+        elif(json_interface[n_int]['Tipo']=='31'):
+            json_interface[n_int]['Tipo']='sip(31)'
+        else:
+            json_interface[n_int]['Tipo']='frame-relay(32)'
+
+        json_interface[n_int]['Numero de Interfaz']= snmp_query(host,community,no_int)
+        json_interface[n_int]['Estado']= snmp_query(host,community,state_int)
+        if(json_interface[n_int]['Estado']=='1'):
+            json_interface[n_int]['Estado']='UP(1)'
+        elif(json_interface[n_int]['Estado']=='2'):
+            json_interface[n_int]['Estado']='DOWN(2)'
+        else:
+            json_interface[n_int]['Estado']='Testing(3)'
+        liga = f"{request.url_root}routers/{hostname}"
+        json_interface[n_int]['Liga al router']=liga
+        if output[i-1].get('ip_address') != 'unassigned':
+            ip_int = output[i-1]['ip_address']
+            json_interface[n_int]['Direccion IP'] = ip_int
+            netmask_int = '.1.3.6.1.2.1.4.20.1.3.'+ ip_int
+            json_interface[n_int]['Submascara'] = snmp_query(host,community,netmask_int)
+        else:
+            json_interface[n_int]['Direccion IP'] = 'Sin Asignar'
+            json_interface[n_int]['Submascara'] = 'Sin Asignar'
+
+        i = i + 1
+
+    with open('/home/panda/interfaz.json', 'w') as f: #cambiar para la dirección de cada computadora
+        json.dump(json_interface,f)
+    return jsonify(json_interface)
 @app.route("/routes/<hostname>/interfaces/<interfaz>")
 def get_routes_hostname_interface(hostname,interfaz):
     cmdGen = cmdgen.CommandGenerator()
