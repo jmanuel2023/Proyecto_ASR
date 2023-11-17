@@ -182,9 +182,19 @@ def create_usuarios():
 @app.route("/usuarios", methods=["PUT"])
 def update_usuarios():
     user = request.form['user']
-    privilege = request.form['privilege']
-    password = request.form['password']
-    usuarios = crud.update_user_all_routers(user, privilege, password)
+    privilege = None
+    password = None
+    try:
+        privilege = request.form['privilege']
+        password = request.form['password']
+    except:
+        print(end='')
+    if privilege:
+        usuarios = crud_router.update_user_all_routers(user, privilege)
+    elif password:
+        usuarios = crud.update_user_all_routers(user, password)
+    else:
+        usuarios = crud.update_user_all_routers(user, privilege, password)
     return jsonify(usuarios)
 
 @app.route("/usuarios",methods=["DELETE"])
@@ -596,9 +606,19 @@ def get_usuarios_router(hostname):
 @app.route("/routes/<hostname>/usuarios", methods=["POST"])
 def create_usuario_router(hostname):
     user = request.form['user']
-    privilege = request.form['privilege']
-    password = request.form['password']
-    usuarios = crud_router.create_user(hostname, user, privilege, password)
+    privilege = None
+    password = None
+    try:
+        privilege = request.form['privilege']
+        password = request.form['password']
+    except:
+        print(end='')
+    if privilege:
+        usuarios = crud_router.create_user(hostname, user, privilege)
+    elif password:
+        usuarios = crud_router.create_user(hostname, user, password)
+    else:
+        usuarios = crud_router.create_user(hostname, user, privilege, password)
     return jsonify(usuarios)
 
 @app.route("/routes/<hostname>/usuarios", methods=["PUT"])
