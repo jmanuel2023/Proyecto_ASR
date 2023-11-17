@@ -9,145 +9,145 @@ import CRUDdispositivo as crud_router
 
 
 def obtener_info_router(host,community):
-	cmdGen = cmdgen.CommandGenerator()
-	
-	router = {
-		'device_type':'cisco_ios',
-		'ip': host,
-		'username':'admin',
-		'password':'admin',
-	}
-		
-	rol1 = "Proveedor de servicios"
-	rol2 = "Router de frontera"
-	rol3 = "Nucleo"
+    cmdGen = cmdgen.CommandGenerator()
+
+    router = {
+    	'device_type':'cisco_ios',
+    	'ip': host,
+    	'username':'admin',
+    	'password':'admin',
+    }
+    
+    rol1 = "Proveedor de servicios"
+    rol2 = "Router de frontera"
+    rol3 = "Nucleo"
     rol4 = "Hojas"
 
 # Hostname OID
-	system_name = '1.3.6.1.2.1.1.5.0'
-	empresa_system = '1.3.6.1.4.1.9.2.1.61.0'
-	so_system = '1.3.6.1.2.1.1.1.0'
+    system_name = '1.3.6.1.2.1.1.5.0'
+    empresa_system = '1.3.6.1.4.1.9.2.1.61.0'
+    so_system = '1.3.6.1.2.1.1.1.0'
 	
-	def obtiene_interfaces():
-		try:
-			connection = ConnectHandler(**router)
-			output = connection.send_command('show ip interface brief')
-		
-		
-			with open('/home/hanz/Proyecto_ASR/plantilla.textfsm', 'r') as archivofsm:
-				template = textfsm.TextFSM(archivofsm)
-		
-			parsed_data = template.ParseText(output)
-			connection.disconnect()
-		
-			interfaces_info = []
-			for entry in parsed_data:
-				interface_info = {
-					"Nombre de Interfaz": entry[0],
-					"Direccion IP": entry[1],
-					"enlace": ""
-				}
-				interfaces_info.append(interface_info)
-			
-		
-			return (interfaces_info)
-		except Exception as e:
-			return jsonify({'error': str(e)})
+    def obtiene_interfaces():
+        try:
+            connection = ConnectHandler(**router)
+            output = connection.send_command('show ip interface brief')
+    
+    
+            with open('/home/hanz/Proyecto_ASR/plantilla.textfsm', 'r') as archivofsm:
+                template = textfsm.TextFSM(archivofsm)
+    
+            parsed_data = template.ParseText(output)
+            connection.disconnect()
+    
+            interfaces_info = []
+            for entry in parsed_data:
+                interface_info = {
+                	"Nombre de Interfaz": entry[0],
+                	"Direccion IP": entry[1],
+                	"enlace": ""
+                }
+                interfaces_info.append(interface_info)
+    
+    
+            return (interfaces_info)
+        except Exception as e:
+            return jsonify({'error': str(e)})
 
-	def snmp_query_1(host, community, oid):
-		errorIndication, errorStatus, errorIndex, varBinds = cmdGen.getCmd(cmdgen.CommunityData(community),cmdgen.UdpTransportTarget((host, 161)),oid)
-		if errorIndication:
-			print(errorIndication)
-		else:
-			if errorStatus:
-				print('%s at %s' % (errorStatus.prettyPrint(),errorIndex and varBinds[int(errorIndex)-1] or '?'))
-			else:
-				for name, val in varBinds:
-					return(str(val))
+    def snmp_query_1(host, community, oid):
+        errorIndication, errorStatus, errorIndex, varBinds = cmdGen.getCmd(cmdgen.CommunityData(community),cmdgen.UdpTransportTarget((host, 161)),oid)
+        if errorIndication:
+            print(errorIndication)
+        else:
+            if errorStatus:
+                print('%s at %s' % (errorStatus.prettyPrint(),errorIndex and varBinds[int(errorIndex)-1] or '?'))
+            else:
+                for name, val in varBinds:
+                    return(str(val))
 
-	def obtiene_rol(host,community,oid):
-		errorIndication, errorStatus, errorIndex, varBinds = cmdGen.getCmd(cmdgen.CommunityData(community), cmdgen.UdpTransportTarget((host,161)),oid)
-		if errorIndication:
-			print(errorIndication)
-		else:
-			if errorStatus:
-				print('%s at %s' % (errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex)-1] or '?'))
-			else:
-				for name, val in varBinds:
-					if str(val) == "TOR-1" or str(val) == "TOR-2":
-						return(rol4)
-					elif str(val) == "R1" or str(val) == "R2":
-						return(rol3)
-					elif str(val) == "Edge":
-						return(rol2)
+    def obtiene_rol(host,community,oid):
+        errorIndication, errorStatus, errorIndex, varBinds = cmdGen.getCmd(cmdgen.CommunityData(community), cmdgen.UdpTransportTarget((host,161)),oid)
+        if errorIndication:
+            print(errorIndication)
+        else:
+            if errorStatus:
+                print('%s at %s' % (errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex)-1] or '?'))
+            else:
+                for name, val in varBinds:
+                    if str(val) == "TOR-1" or str(val) == "TOR-2":
+                        return(rol4)
+                    elif str(val) == "R1" or str(val) == "R2":
+                        return(rol3)
+                    elif str(val) == "Edge":
+                        return(rol2)
                     else:
                         return(rol1) 
 						
-	def obtiene_iploopback():
-		return("N/A")
+    def obtiene_iploopback():
+        return("N/A")
 	
-	def obtiene_ipadmin():
-		try:
-			connection = ConnectHandler(**router)
-			output = connection.send_command('show ip interface brief')
+    def obtiene_ipadmin():
+        try:
+            connection = ConnectHandler(**router)
+            output = connection.send_command('show ip interface brief')
+
+
+            with open('/home/hanz/Proyecto_ASR/plantilla.textfsm', 'r') as archivofsm:
+                template = textfsm.TextFSM(archivofsm)
 		
-		
-			with open('/home/hanz/Proyecto_ASR/plantilla.textfsm', 'r') as archivofsm:
-				template = textfsm.TextFSM(archivofsm)
-		
-			parsed_data = template.ParseText(output)
-			connection.disconnect()
-		
-			interfaces_info = []
-			for entry in parsed_data:
-				interface_info = {
-					"Direccion IP":entry[1]
-				}
-				interfaces_info.append(interface_info)
-				break
+            parsed_data = template.ParseText(output)
+            connection.disconnect()
+
+            interfaces_info = []
+            for entry in parsed_data:
+                interface_info = {
+                	"Direccion IP":entry[1]
+                }
+                interfaces_info.append(interface_info)
+                break
 			
 		
-			return (interfaces_info)
-		except Exception as e:
-			return jsonify({'error': str(e)})
+            return (interfaces_info)
+        except Exception as e:
+            return jsonify({'error': str(e)})
 
-	def obtiene_empresa(host, community, oid):
-		errorIndication, errorStatus, errorIndex, varBinds = cmdGen.getCmd(cmdgen.CommunityData(community),cmdgen.UdpTransportTarget((host, 161)),oid)
-		if errorIndication:
-			print(errorIndication)
-		else:
-			if errorStatus:
-				print('%s at %s' % (errorStatus.prettyPrint(),errorIndex and varBinds[int(errorIndex)-1] or '?'))
-			else:
-				for name, val in varBinds:
-					cadena = str(val)
-					empresa = cadena[:19]
-					return(empresa)
+    def obtiene_empresa(host, community, oid):
+        errorIndication, errorStatus, errorIndex, varBinds = cmdGen.getCmd(cmdgen.CommunityData(community),cmdgen.UdpTransportTarget((host, 161)),oid)
+        if errorIndication:
+            print(errorIndication)
+        else:
+            if errorStatus:
+                print('%s at %s' % (errorStatus.prettyPrint(),errorIndex and varBinds[int(errorIndex)-1] or '?'))
+            else:
+                for name, val in varBinds:
+                    cadena = str(val)
+                    empresa = cadena[:19]
+                    return(empresa)
 
-	def obtiene_so(host, community, oid):
-		errorIndication, errorStatus, errorIndex, varBinds = cmdGen.getCmd(cmdgen.CommunityData(community),cmdgen.UdpTransportTarget((host, 161)),oid)
-		if errorIndication:
-			print(errorIndication)
-		else:
-			if errorStatus:
-				print('%s at %s' % (errorStatus.prettyPrint(),errorIndex and varBinds[int(errorIndex)-1] or '?'))
-			else:
-				for name, val in varBinds:
-					cadena2 = str(val)
-					so = cadena2[:18]
-					return(so)
+    def obtiene_so(host, community, oid):
+        errorIndication, errorStatus, errorIndex, varBinds = cmdGen.getCmd(cmdgen.CommunityData(community),cmdgen.UdpTransportTarget((host, 161)),oid)
+        if errorIndication:
+            print(errorIndication)
+        else:
+            if errorStatus:
+                print('%s at %s' % (errorStatus.prettyPrint(),errorIndex and varBinds[int(errorIndex)-1] or '?'))
+            else:
+                for name, val in varBinds:
+                    cadena2 = str(val)
+                    so = cadena2[:18]
+                    return(so)
 
 	
-	result = {}
-	result["hostname"] = snmp_query_1(host, community, system_name)
-	result["LoopBack_IP"] = obtiene_iploopback()
-	result["IP_administrativa"] = obtiene_ipadmin()
-	result["Empresa"] = obtiene_empresa(host, community, empresa_system)
-	result["rol"] = obtiene_rol(host, community,  system_name)
-	result["Sistema Operativo"] = obtiene_so(host, community, so_system) 
-	result["Interfaces activas"] = obtiene_interfaces()
-	
-	return result
+    result = {}
+    result["hostname"] = snmp_query_1(host, community, system_name)
+    result["LoopBack_IP"] = obtiene_iploopback()
+    result["IP_administrativa"] = obtiene_ipadmin()
+    result["Empresa"] = obtiene_empresa(host, community, empresa_system)
+    result["rol"] = obtiene_rol(host, community,  system_name)
+    result["Sistema Operativo"] = obtiene_so(host, community, so_system) 
+    result["Interfaces activas"] = obtiene_interfaces()
+        
+    return result
 
 def actualizar_enlaces(routers):
 	for router in routers:
@@ -198,45 +198,45 @@ def delete_usuarios():
 @app.route("/routes")
 def get_routes():
     with open('/home/hanz/Proyecto_ASR/routers.json','r') as file:
-		datos = json.load(file)
-	hosts=[device['ip'] for device in datos.values()]
-	community = 'publica'
+        datos = json.load(file)
+    hosts=[device['ip'] for device in datos.values()]
+    community = 'publica'
 	
-	all_results = []
+    all_results = []
 	
-	for host in hosts:
-		result = obtener_info_router(host, community)
-		all_results.append(result)
+    for host in hosts:
+        result = obtener_info_router(host, community)
+        all_results.append(result)
 	
-	with open('/home/hanz/Proyecto_ASR/resultados.json', 'w') as f:
-		json.dump(all_results,f, indent=2)
+    with open('/home/hanz/Proyecto_ASR/resultados.json', 'w') as f:
+        json.dump(all_results,f, indent=2)
 	
-	try:
-		with open('/home/hanz/Proyecto_ASR/resultados.json', 'r') as json_file:
-			routers = json.load(json_file)
+    try:
+        with open('/home/hanz/Proyecto_ASR/resultados.json', 'r') as json_file:
+            routers = json.load(json_file)
 		
-		actualizar_enlaces(routers)
+        actualizar_enlaces(routers)
 				
 		
-		return jsonify(resultados = routers)
-	except FileNotFoundError:
-		return jsonify({'error': 'El archivo JSON no se encuentra'})
+        return jsonify(resultados = routers)
+    except FileNotFoundError:
+        return jsonify({'error': 'El archivo JSON no se encuentra'})
 
 
 #Routes Hostname Endpoint TODO: Iplement get funtion
 @app.route("/routes/<hostname>")
 def get_routes_hostname(hostname):
     try:
-		with open('/home/hanz/Proyecto_ASR/resultados.json', 'r') as archivo:
-			datos = json.load(archivo)	
-		for router in datos:
-			if router['hostname'] == hostname:
-				actualizar_enlaces(datos)
-				return jsonify(router)
+        with open('/home/hanz/Proyecto_ASR/resultados.json', 'r') as archivo:
+            datos = json.load(archivo)	
+        for router in datos:
+            if router['hostname'] == hostname:
+                actualizar_enlaces(datos)
+                return jsonify(router)
 				
-		return jsonify({'error': 'Router no encontrado'}),404
-	except FileNotFoundError:
-		return jsonify({'error': 'El archivo JSON no se encuentra'}),404
+        return jsonify({'error': 'Router no encontrado'}),404
+    except FileNotFoundError:
+        return jsonify({'error': 'El archivo JSON no se encuentra'}),404
 
 #Routes Hostname Interface Endpoint TODO: Iplement get funtion
 @app.route("/routes/<hostname>/interfaces/")
