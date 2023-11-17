@@ -1,11 +1,15 @@
 from flask import Flask, jsonify, request, url_for
-from pysnmp.entity.rfc3413.oneliner import cmddgen
+from pysnmp.entity.rfc3413.oneliner import cmdgen
 from netmiko import ConnectHandler
 from netmiko import Netmiko
 import textfsm
 import json
 import CRUDgeneral as crud
 import CRUDdispositivo as crud_router
+import topology as topology_scaner
+import threading
+import time
+import graficar_topologia as topog
 
 
 def obtener_info_router(host,community):
@@ -34,7 +38,7 @@ def obtener_info_router(host,community):
             output = connection.send_command('show ip interface brief')
     
     
-            with open('/home/hanz/Proyecto_ASR/plantilla.textfsm', 'r') as archivofsm:
+            with open('plantilla.textfsm', 'r') as archivofsm:
                 template = textfsm.TextFSM(archivofsm)
     
             parsed_data = template.ParseText(output)
@@ -92,7 +96,7 @@ def obtener_info_router(host,community):
             output = connection.send_command('show ip interface brief')
 
 
-            with open('/home/hanz/Proyecto_ASR/plantilla.textfsm', 'r') as archivofsm:
+            with open('plantilla.textfsm', 'r') as archivofsm:
                 template = textfsm.TextFSM(archivofsm)
 		
             parsed_data = template.ParseText(output)
@@ -169,7 +173,7 @@ app =  Flask(__name__)
 @app.route("/usuarios")
 def get_usuarios():
     usuarios = crud.get_users_all_routers()
-    return json.dumps(usuarios)
+    return jsonify(usuarios)
 
 @app.route("/usuarios", methods=["POST"])
 def create_usuarios():
@@ -177,7 +181,7 @@ def create_usuarios():
     privilege = request.form['privilege']
     password = request.form['password']
     usuarios = crud.create_user_all_routers(user, privilege, password)
-    return json.dumps(usuarios)
+    return jsonify(usuarios)
 
 @app.route("/usuarios", methods=["PUT"])
 def update_usuarios():
@@ -185,19 +189,19 @@ def update_usuarios():
     privilege = request.form['privilege']
     password = request.form['password']
     usuarios = crud.update_user_all_routers(user, privilege, password)
-    return json.dumps(usuarios)
+    return jsonify(usuarios)
 
 @app.route("/usuarios",methods=["DELETE"])
 def delete_usuarios():
     user = request.form['user']
     usuarios = crud.delete_user_all_routers(user)
-    return json.dumps(usuarios)
+    return jsonify(usuarios)
 
 
 #Routes Endpoint TODO: Iplement get funtion
 @app.route("/routes")
 def get_routes():
-    with open('/home/hanz/Proyecto_ASR/routers.json','r') as file:
+    with open('routers.json','r') as file:
         datos = json.load(file)
     hosts=[device['ip'] for device in datos.values()]
     community = 'publica'
@@ -208,11 +212,11 @@ def get_routes():
         result = obtener_info_router(host, community)
         all_results.append(result)
 	
-    with open('/home/hanz/Proyecto_ASR/resultados.json', 'w') as f:
+    with open('resultados.json', 'w') as f:
         json.dump(all_results,f, indent=2)
 	
     try:
-        with open('/home/hanz/Proyecto_ASR/resultados.json', 'r') as json_file:
+        with open('resultados.json', 'r') as json_file:
             routers = json.load(json_file)
 		
         actualizar_enlaces(routers)
@@ -227,7 +231,7 @@ def get_routes():
 @app.route("/routes/<hostname>")
 def get_routes_hostname(hostname):
     try:
-        with open('/home/hanz/Proyecto_ASR/resultados.json', 'r') as archivo:
+        with open('resultados.json', 'r') as archivo:
             datos = json.load(archivo)	
         for router in datos:
             if router['hostname'] == hostname:
@@ -242,7 +246,7 @@ def get_routes_hostname(hostname):
 @app.route("/routes/<hostname>/interfaces/")
 def interface(hostname):
     cmdGen = cmdgen.CommandGenerator()
-    with open('/home/panda/routers.json','r') as f: #Aqui se abrirá el routers.json pero se necesita cambiar al directorio que tendŕa cada quien
+    with open('routers.json','r') as f: #Aqui se abrirá el routers.json pero se necesita cambiar al directorio que tendŕa cada quien
         data = json.load(f)
     if hostname in data:
         host = data[hostname]['ip'] #Se debe cambiar a la estructura del json, para encontrar la ip del router
@@ -401,7 +405,7 @@ def interface(hostname):
 
         i = i + 1
 
-    with open('/home/panda/interfaz.json', 'w') as f: #cambiar para la dirección de cada computadora
+    with open('interfaz.json', 'w') as f: #cambiar para la dirección de cada computadora
         json.dump(json_interface,f)
     return jsonify(json_interface)
 @app.route("/routes/<hostname>/interfaces/<interfaz>")
@@ -409,7 +413,7 @@ def get_routes_hostname_interface(hostname,interfaz):
     cmdGen = cmdgen.CommandGenerator()
     n_int = interfaz
     n_int = n_int.replace('_','/')
-    with open('/home/hanz/Proyecto_ASR/routers.json','r') as f: #Aqui se abrirá el routers.json pero se necesita cambiar al directorio que tendŕa cada quien
+    with open('routers.json','r') as f: #Aqui se abrirá el routers.json pero se necesita cambiar al directorio que tendŕa cada quien
         data = json.load(f)
     if hostname in data:
         host = data[hostname]['ip'] #Se debe cambiar a la estructura del json, para encontrar la ip del router
@@ -583,7 +587,7 @@ def get_routes_hostname_interface(hostname,interfaz):
     liga = f"{request.url_root}routes/{hostname}"
     json_interface['Liga al router']=liga
 
-    with open('/home/hanz/Proyecto_ASR/interfaz.json', 'w') as f: #cambiar para la dirección de cada computadora
+    with open('interfaz.json', 'w') as f: #cambiar para la dirección de cada computadora
         json.dump(json_interface,f)
     return jsonify(json_interface)
 
@@ -591,7 +595,7 @@ def get_routes_hostname_interface(hostname,interfaz):
 @app.route("/routes/<hostname>/usuarios")
 def get_usuarios_router(hostname):
     usuarios = crud_router.get_users(hostname)
-    return json.dumps(usuarios)
+    return jsonify(usuarios)
 
 @app.route("/routes/<hostname>/usuarios", methods=["POST"])
 def create_usuario_router(hostname):
@@ -599,7 +603,7 @@ def create_usuario_router(hostname):
     privilege = request.form['privilege']
     password = request.form['password']
     usuarios = crud_router.create_user(hostname, user, privilege, password)
-    return json.dumps(usuarios)
+    return jsonify(usuarios)
 
 @app.route("/routes/<hostname>/usuarios", methods=["PUT"])
 def update_usuario_router(hostname):
@@ -607,36 +611,84 @@ def update_usuario_router(hostname):
     privilege = request.form['privilege']
     password = request.form['password']
     usuarios = crud_router.update_user(hostname, user,privilege, password)
-    return json.dumps(usuarios)
+    return jsonify(usuarios)
 
 @app.route("/routes/<hostname>/usuarios",methods=["DELETE"])
 def delete_usuario_router(hostname):
     user = request.form['user']
     usuarios = crud_router.delete_user(hostname, user)
-    return json.dumps(usuarios)
+    return jsonify(usuarios)
 
 
 #Detect topology TODO: implement funtions
-@app.route("/topologia")
+
+# Variables globales para almacenar el estado del demonio y el tiempo de espera
+daemon_running = False
+update_interval = 0
+current_topology = {"mensaje": "Topología no actualizada"}
+
+def update_topology():
+    global daemon_running
+    global update_interval
+    global current_topology
+
+    while daemon_running:
+        time.sleep(update_interval)
+        # Lógica para actualizar la topología aquí
+        current_topology = topology_scaner.get_topology()
+        print("Actualizando topología...")
+
+@app.route("/topologia", methods=["GET"])
 def get_topologia():
-    return "Hola"
+    global current_topology
+    # Devolver la topología actualizada o no actualizada, según el estado del demonio
+    return jsonify(current_topology)
 
 @app.route("/topologia", methods=["POST"])
 def create_daemon():
-    return "Hola"
+    global daemon_running
+    global update_interval
+
+    if not daemon_running:
+        # Obtener el tiempo de espera del cuerpo de la solicitud
+        data = request.get_json()
+        update_interval = data.get("update_interval", 60)  # 60 segundos por defecto
+
+        # Iniciar el demonio en un hilo
+        daemon_running = True
+        daemon_thread = threading.Thread(target=update_topology)
+        daemon_thread.start()
+
+        return jsonify({"mensaje": "Demonio creado correctamente"})
+
+    return jsonify({"mensaje": "El demonio ya está en ejecución"})
 
 @app.route("/topologia", methods=["PUT"])
 def update_daemon():
-    return "Hola"
+    global update_interval
 
-@app.route("/topologia",methods=["DELETE"])
+    # Obtener el nuevo tiempo de espera del cuerpo de la solicitud
+    data = request.get_json()
+    update_interval = data.get("update_interval", 60)  # 60 segundos por defecto
+
+    return jsonify({"mensaje": "Tiempo de actualización del demonio actualizado correctamente"})
+
+@app.route("/topologia", methods=["DELETE"])
 def delete_daemon():
-    return "Hola"
+    global daemon_running
+
+    if daemon_running:
+        # Detener el demonio
+        daemon_running = False
+
+        return jsonify({"mensaje": "Demonio eliminado correctamente"})
+
+    return jsonify({"mensaje": "El demonio no está en ejecución"})
 
 #Graphic topology TODO: implement funtions
 @app.route("/topologia/grafica")
 def get_topologiagrafico():
-    return "Hola"
+    return topog.generar_grafico(current_topology)
 
 
 if __name__ == '__main__':
