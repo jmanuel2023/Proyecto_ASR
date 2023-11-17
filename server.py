@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, request, url_for
-from pysnmp.entity.rfc3413.oneliner import cmddgen
+from pysnmp.entity.rfc3413.oneliner import cmdgen
 from netmiko import ConnectHandler
 from netmiko import Netmiko
 import textfsm
