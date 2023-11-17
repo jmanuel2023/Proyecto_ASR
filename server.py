@@ -169,7 +169,7 @@ app =  Flask(__name__)
 @app.route("/usuarios")
 def get_usuarios():
     usuarios = crud.get_users_all_routers()
-    return json.dumps(usuarios)
+    return jsonify(usuarios)
 
 @app.route("/usuarios", methods=["POST"])
 def create_usuarios():
@@ -177,7 +177,7 @@ def create_usuarios():
     privilege = request.form['privilege']
     password = request.form['password']
     usuarios = crud.create_user_all_routers(user, privilege, password)
-    return json.dumps(usuarios)
+    return jsonify(usuarios)
 
 @app.route("/usuarios", methods=["PUT"])
 def update_usuarios():
@@ -185,13 +185,13 @@ def update_usuarios():
     privilege = request.form['privilege']
     password = request.form['password']
     usuarios = crud.update_user_all_routers(user, privilege, password)
-    return json.dumps(usuarios)
+    return jsonify(usuarios)
 
 @app.route("/usuarios",methods=["DELETE"])
 def delete_usuarios():
     user = request.form['user']
     usuarios = crud.delete_user_all_routers(user)
-    return json.dumps(usuarios)
+    return jsonify(usuarios)
 
 
 #Routes Endpoint TODO: Iplement get funtion
@@ -591,7 +591,7 @@ def get_routes_hostname_interface(hostname,interfaz):
 @app.route("/routes/<hostname>/usuarios")
 def get_usuarios_router(hostname):
     usuarios = crud_router.get_users(hostname)
-    return json.dumps(usuarios)
+    return jsonify(usuarios)
 
 @app.route("/routes/<hostname>/usuarios", methods=["POST"])
 def create_usuario_router(hostname):
@@ -599,7 +599,7 @@ def create_usuario_router(hostname):
     privilege = request.form['privilege']
     password = request.form['password']
     usuarios = crud_router.create_user(hostname, user, privilege, password)
-    return json.dumps(usuarios)
+    return jsonify(usuarios)
 
 @app.route("/routes/<hostname>/usuarios", methods=["PUT"])
 def update_usuario_router(hostname):
@@ -607,13 +607,13 @@ def update_usuario_router(hostname):
     privilege = request.form['privilege']
     password = request.form['password']
     usuarios = crud_router.update_user(hostname, user,privilege, password)
-    return json.dumps(usuarios)
+    return jsonify(usuarios)
 
 @app.route("/routes/<hostname>/usuarios",methods=["DELETE"])
 def delete_usuario_router(hostname):
     user = request.form['user']
     usuarios = crud_router.delete_user(hostname, user)
-    return json.dumps(usuarios)
+    return jsonify(usuarios)
 
 
 #Detect topology TODO: implement funtions
