@@ -31,8 +31,8 @@ def get_topology():
     devices = {
         "R1": {"device_type": "cisco_ios","ip": "10.10.10.17","username": "admin", "password": "admin"},
         "R2": {"device_type": "cisco_ios","ip": "10.10.10.13","username": "admin", "password": "admin"},
-        "TOR-1": {"device_type": "cisco_ios","ip": "192.168.0.1","username": "admin", "password": "admin"},
-        "TOR-2": {"device_type": "cisco_ios","ip": "10.10.10.10","username": "admin", "password": "admin"},
+        "TDR-1": {"device_type": "cisco_ios","ip": "192.168.0.1","username": "admin", "password": "admin"},
+        "TDR-2": {"device_type": "cisco_ios","ip": "10.10.10.10","username": "admin", "password": "admin"},
         "Edge": {"device_type": "cisco_ios","ip": "10.10.10.1","username": "admin", "password": "admin"},
         "ISP": {"device_type": "cisco_ios","ip": "20.20.30.1","username": "admin", "password": "admin"}
     }

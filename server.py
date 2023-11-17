@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, url_for
+from flask import Flask, jsonify, request, url_for, send_file
 from pysnmp.entity.rfc3413.oneliner import cmdgen
 from netmiko import ConnectHandler
 from netmiko import Netmiko
@@ -211,7 +211,7 @@ def get_routes():
     for host in hosts:
         result = obtener_info_router(host, community)
         all_results.append(result)
-	
+
     with open('resultados.json', 'w') as f:
         json.dump(all_results,f, indent=2)
 	
@@ -221,7 +221,6 @@ def get_routes():
 		
         actualizar_enlaces(routers)
 				
-		
         return jsonify(resultados = routers)
     except FileNotFoundError:
         return jsonify({'error': 'El archivo JSON no se encuentra'})
@@ -688,7 +687,11 @@ def delete_daemon():
 #Graphic topology TODO: implement funtions
 @app.route("/topologia/grafica")
 def get_topologiagrafico():
-    return topog.generar_grafico(current_topology)
+    if len(current_topology) == 0:
+        imagen = topog.generar_grafico(current_topology)
+        return send_file(imagen, mimetype='image/png')
+    else:
+        return jsonify("No hay datos")
 
 
 if __name__ == '__main__':

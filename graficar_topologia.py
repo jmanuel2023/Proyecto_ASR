@@ -14,11 +14,11 @@ def generar_grafico(topologia):
         for conexion in conexiones:
             nodo_actual = conexion["Name"]
             # Si el nodo no está en el conjunto, agrégalo al grafo y al conjunto
-            if nodo_actual not in nodos_unicos:
+            if nodo_actual not in nodos_unicos and nodo_actual in dispositivos:
                 G.add_node(nodo_actual)
                 nodos_unicos.add(nodo_actual)
             # Agregar enlace al grafo
-            G.add_edge(dispositivos, nodo_actual, link=conexion["Link"])
+            G.add_edge(dispositivos, nodo_actual)
 
     # Dibujar el grafo
     pos = nx.shell_layout(G)
