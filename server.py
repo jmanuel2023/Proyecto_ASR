@@ -10,6 +10,7 @@ import topology as topology_scaner
 import threading
 import time
 import graficar_topologia as topog
+import trapSNMP as trap
 
 
 def obtener_info_router(host,community):
@@ -224,7 +225,6 @@ def get_routes():
         return jsonify(resultados = routers)
     except FileNotFoundError:
         return jsonify({'error': 'El archivo JSON no se encuentra'})
-
 
 #Routes Hostname Endpoint TODO: Iplement get funtion
 @app.route("/routes/<hostname>")
@@ -590,6 +590,77 @@ def get_routes_hostname_interface(hostname,interfaz):
         json.dump(json_interface,f)
     return jsonify(json_interface)
 
+
+interfaces_listened = {}
+#Routes Hostname Interface Endpoint TODO: Iplement get funtion
+@app.route("/routes/<hostname>/interfaces/<interfaz>/estado", methods=['GET'])
+def get_interface_state(hostname, interfaz):
+    with app.app_context():
+        response = interface(hostname)
+        if response.status_code == 404:
+            return response
+        interfaces = response.get_json()
+    if not (interfaz in interfaces):
+        response = jsonify({"Error":"La interfaz no se encuentra definida"})
+        response.status_code = 404
+        return response    
+    
+    try:
+        if not interfaces_listened[hostname][interfaz]:
+            return jsonify({"status":"No se ha activado la captura de trampas en esta interfaz"})
+    except:
+        return jsonify({"status":"No se ha activado la captura de trampas en esta interfaz"})
+    try:
+        return jsonify(trap.shared.interfaces_state[interfaz])
+    except:
+        return jsonify({"status":"No se ha recivido un trap para esta interfaz"})
+    
+@app.route("/routes/<hostname>/interfaces/<interfaz>/estado", methods=['POST'])
+def active_trap_listener(hostname, interfaz):
+    with app.app_context():
+        response = interface(hostname)
+        if response.status_code == 404:
+            return response
+        interfaces = response.get_json()
+    if not (interfaz in interfaces):
+        response = jsonify({"Error":"La interfaz no se encuentra definida"})
+        response.status_code = 404
+        return response    
+    global interfaces_listened
+    interfaces_listened[hostname][interfaz] = True
+    try:
+        if not interfaces_listened[hostname][interfaz]:
+            return jsonify({"status":"No se ha activado la captura de trampas en esta interfaz"})
+    except:
+        return jsonify({"status":"No se ha activado la captura de trampas en esta interfaz"})
+    try:
+        return jsonify(trap.shared.interfaces_state[interfaz])
+    except:
+        return jsonify({"status":"No se ha recivido un trap para esta interfaz"})
+
+@app.route("/routes/<hostname>/interfaces/<interfaz>/estado", methods=['DELETE'])
+def desactive_trap_listener(hostname, interfaz):
+    with app.app_context():
+        response = interface(hostname)
+        if response.status_code == 404:
+            return response
+        interfaces = response.get_json()
+    if not (interfaz in interfaces):
+        response = jsonify({"Error":"La interfaz no se encuentra definida"})
+        response.status_code = 404
+        return response    
+    global interfaces_listened
+    interfaces_listened[hostname][interfaz] = False
+    try:
+        if not interfaces_listened[hostname][interfaz]:
+            return jsonify({"status":"No se ha activado la captura de trampas en esta interfaz"})
+    except:
+        return jsonify({"status":"No se ha activado la captura de trampas en esta interfaz"})
+    try:
+        return jsonify(trap.shared.interfaces_state[interfaz])
+    except:
+        return jsonify({"status":"No se ha recivido un trap para esta interfaz"})
+
 #Crud users per router TODO: implement funtions
 @app.route("/routes/<hostname>/usuarios")
 def get_usuarios_router(hostname):
@@ -695,4 +766,6 @@ def get_topologiagrafico():
 
 
 if __name__ == '__main__':
+    trap_thread = threading.Thread(target=trap.start_trap)
+    trap_thread.start()
     app.run(debug=True)
